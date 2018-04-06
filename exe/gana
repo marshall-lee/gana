@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'gana/global'
+require 'gana/cursed_printer'
+
+filename = ARGV[0]
+
+Gana.default_printer_class = Gana::CursedPrinter
+db = Sequel.connect(adapter: :postgres, database: 'gana_test', max_connections: 10)
+db.instance_eval(File.read(filename), filename)
