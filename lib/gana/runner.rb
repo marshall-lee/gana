@@ -15,7 +15,8 @@ module Gana
       printer_class ||= Gana.default_printer_class
       printer = printer_class.new(self) if printer_class
       @db.server_version
-      @db.instance_exec(*@workers, &block)
+      context = ExecutionContext.new(self)
+      context.instance_exec(*@workers, &block)
       @workers.each(&:terminate)
       printer.finalize if printer
     end
