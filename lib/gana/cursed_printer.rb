@@ -17,6 +17,7 @@ module Gana
     RUNNING_SPINNER = '◴◵◶◷◴◵◶◷◴◵◶◷'.freeze
     SUCCESS_MARK = '✔'.freeze
     FAIL_MARK = '✘'.freeze
+    PRINT_MARK = 'ℹ'.freeze
 
     GREEN = 1
     RED = 2
@@ -95,6 +96,10 @@ module Gana
               pr("   #{line}"); br
             end
           end
+        when LogPrint
+          clr(WHITE, bold: true ) { pr PRINT_MARK }
+          pr_worker_mark(entry.worker) if entry.worker
+          clr(WHITE) { pr " #{entry.msg}"; br }
         end
       end
       @runner.workers.any?(&:alive?).tap do |running|

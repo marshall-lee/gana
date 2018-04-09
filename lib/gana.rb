@@ -7,6 +7,7 @@ module Gana
   require 'gana/actions'
   require 'gana/statement'
   require 'gana/log_error'
+  require 'gana/log_print'
 
   class << self
     attr_accessor :default_printer_class
