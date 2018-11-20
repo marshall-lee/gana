@@ -1,11 +1,59 @@
 #!/usr/bin/env ruby
+# frozen-string-literal: true
 
 require 'bundler/setup'
 require 'gana/global'
 require 'gana/cursed_printer'
+require 'optparse'
 
 filename = ARGV[0]
 
 Gana.default_printer_class = Gana::CursedPrinter
-db = Sequel.connect(adapter: :postgres, database: 'gana_test', max_connections: 10)
+
+connection_options = {
+  adapter: 'postgres',
+  database: 'gana_test',
+  max_connections: 10
+}
+
+parser = OptionParser.new do |opts|
+  opts.banner = 'Usage:'
+  opts.separator "  gana <file> [options]"
+  opts.separator "  gana -h | --help"
+
+  opts.on('-a', '--adapter ADAPTER', 'Database adapter') do |a|
+    connection_options[:adapter] = a
+  end
+
+  opts.on('-d', '--database DATABASE', 'Database name') do |d|
+    connection_options[:database] = d
+  end
+
+  opts.on('-h', '--host HOST', 'Specifies connection host') do |h|
+    connection_options[:host] = h
+  end
+
+  opts.on('-p', '--port PORT', Integer, 'Specifies connection port') do |p|
+    connection_options[:port] = p
+  end
+
+  opts.on('-u', '--username USERNAME', 'Database connection username') do |u|
+    connection_options[:username] = u
+  end
+
+  opts.on('-W', '--password PASSWORD', 'Database connection password') do |w|
+    connection_options[:password] = w
+  end
+
+  opts.separator "Common options:"
+
+  opts.on_tail('-h', '--help', 'Show this message') do
+    puts opts
+    exit
+  end
+end
+
+parser.parse!(ARGV)
+
+db = Sequel.connect(connection_options)
 db.instance_eval(File.read(filename), filename)
