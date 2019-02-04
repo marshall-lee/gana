@@ -1,5 +1,15 @@
 sudo: false
 language: ruby
+cache:
+  - bundler
+  - directories:
+    - /home/travis/.rvm/
 rvm:
-  - 2.5.1
-before_install: gem install bundler -v 1.16.1
+  - 2.3
+  - 2.4
+  - 2.5
+  - 2.6
+before_install: gem install bundler -v 1.17.2
+before_script: createdb -U postgres gana_test
+services:
+  - postgresql
