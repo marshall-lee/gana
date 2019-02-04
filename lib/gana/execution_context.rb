@@ -16,6 +16,10 @@ module Gana
       @runner.db
     end
 
+    def log
+      @runner.log.each
+    end
+
     def new_table(name = :table, &block)
       name = "#{name}_#{SecureRandom.hex(3)}".to_sym
       db.create_table(name, &block)

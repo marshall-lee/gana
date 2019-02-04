@@ -6,7 +6,7 @@ module Gana
         raise ArgumentError, 'You must pass  block'
       end
       threads ||= block.arity
-      unless threads > 0
+      unless threads >= 0
         raise ArgumentError,
               'Cannot determine threads number from the block arity'
       end
