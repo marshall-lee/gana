@@ -12,6 +12,10 @@ module Gana
       @runner.log << LogPrint.new(Thread.current[:gana_worker], msg)
     end
 
+    def sync_all
+      @runner.workers.each(&:sync)
+    end
+
     def db
       @runner.db
     end

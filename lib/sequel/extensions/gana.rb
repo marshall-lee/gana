@@ -21,7 +21,6 @@ module Gana
       if statement && !e
         statement.duration = Sequel.elapsed_seconds_since(timer)
       end
-      sleep 0.5 if statement
     end
 
     Sequel::Database.register_extension :gana, self
