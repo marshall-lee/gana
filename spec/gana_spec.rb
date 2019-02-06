@@ -87,8 +87,8 @@ RSpec.describe Gana do
 
   it 'logs SQL statements' do
     db.gana do |t1, t2|
-      t1.sync { db.select(1).all }
-      t2.sync { db.select(2).all }
+      t1.sync { select(1).all }
+      t2.sync { select(2).all }
       expect(log).to match [
         a_kind_of(Gana::Statement).and(
           an_object_having_attributes(sql: /SELECT.+1/, worker: t1)
@@ -105,7 +105,8 @@ RSpec.describe Gana do
       t1.exec { execute 'SELECT pg_sleep(0.3)' }
       t2.exec { execute 'SELECT pg_sleep(0.1)' }
       t3.exec { execute 'SELECT pg_sleep(0.2)' }
-      sleep 0.35
+
+      sync_all
 
       expect(log).to match a_collection_containing_exactly(
         a_kind_of(Gana::Statement).and(

@@ -1,29 +1,25 @@
-require 'thread'
-
 module Gana
   class Worker
+    LAME_TIMEOUT = 0.05
+
     def initialize(runner, index)
       @runner = runner
       @index = index
       @queue = Queue.new
-      @mutex = Mutex.new
       @thread = Thread.new { run }
     end
 
     def sync(&block)
-      return if @terminated
-      @mutex.synchronize do
-        cond = ConditionVariable.new
-        exec(cond: cond, &block)
-        cond.wait(@mutex)
+      exec(&block).tap do |action|
+        action.wait_until(&:completed?)
       end
     end
 
-    def exec(cond: nil, &block)
-      return if @terminated
-      action = Actions::Exec.new(cond, &block)
-      @queue << action
-      sleep 0.05
+    def exec(&block)
+      Actions::Exec.new(&block).tap do |action|
+        @queue << action
+        action.wait_while(LAME_TIMEOUT, &:waiting?)
+      end
     end
 
     def begin_transaction(**options)
@@ -39,7 +35,7 @@ module Gana
     end
 
     def terminate
-      @queue << nil
+      @queue.close
       @thread.join
     end
 
@@ -67,13 +63,12 @@ module Gana
     end
 
     def run_loop
-      loop do
-        break if @terminated
+      until @queue.closed? && @queue.empty?
         action = @queue.pop
         case action
         when Actions::Exec
-          @mutex.synchronize { action.run }
-          raise action.result if action.status == :failed
+          action.run
+          raise action.result if action.state == :failed
         when Actions::BeginTransaction
           db.transaction(action.options) { run_loop }
         when Actions::RollbackTransaction

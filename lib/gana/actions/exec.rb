@@ -1,25 +1,34 @@
 module Gana::Actions
+  # :nodoc
   class Exec
-    def initialize(cond, &block)
-      @cond = cond
-      @block = block
-      @status = :waiting
+    include Gana::EventedState
+
+    def initialize(&block)
+      super
+      @block = block || proc {}
+      @state = :waiting
       @result = nil
     end
 
     def run
-      @status = :running
+      state!(:running)
       @block.call.tap do |result|
         @result = result
-        @status = :succeed
+        state!(:succeed)
       end
     rescue => e
       @result = e
-      @status = :failed
-    ensure
-      @cond.signal if @cond
+      state!(:failed)
     end
 
-    attr_reader :status, :result
+    attr_reader :result
+
+    def waiting?
+      @state == :waiting
+    end
+
+    def completed?
+      @state == :succeed || @state == :failed
+    end
   end
 end

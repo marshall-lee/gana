@@ -3,6 +3,7 @@ module Gana
   require 'gana/version'
   require 'gana/runner'
   require 'gana/execution_context'
+  require 'gana/event'
   require 'gana/worker'
   require 'gana/actions'
   require 'gana/statement'
