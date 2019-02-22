@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     gana (0.1.0)
-      sequel (~> 5.0)
+      sequel (~> 5.16)
 
 GEM
   remote: https://rubygems.org/
@@ -36,7 +36,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.8.0)
     rspec-support (3.8.0)
-    sequel (5.7.1)
+    sequel (5.17.0)
     yard (0.9.18)
 
 PLATFORMS
