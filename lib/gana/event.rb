@@ -1,6 +1,6 @@
 module Gana
   module EventedState
-    def initialize(*)
+    def initialize
       @evs_mutex = Mutex.new
       @evs_cond = ConditionVariable.new
       super
@@ -9,7 +9,7 @@ module Gana
     def state!(value)
       @evs_mutex.synchronize do
         @state = value
-        @evs_cond.signal
+        @evs_cond.broadcast
       end
     end
 

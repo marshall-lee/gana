@@ -1,30 +1,29 @@
 module Gana::Actions
-  class BeginTransaction < Base
+  class Savepoint < Base
     include Gana::EventedState
 
-    def initialize(db, **options, &block)
+    def initialize(db, &block)
       super()
       @db = db
-      @options = options
       @block = block
     end
 
     def run
       if @db.in_transaction?
-        state!(:failed)
-        raise 'Transaction is already started'
-      else
-        end_action, continuation = @db.transaction(@options) do
-          # BEGIN statement executed
+        end_action, continuation = @db.transaction(savepoint: true) do
+          # SAVEPOINT statement executed
           state!(:succeed)
 
-          catch(:end_transaction, &@block)
+          catch(:destroy_savepoint, &@block)
         end
 
-        # COMMIT or ROLLBACK executed
+        # RELEASE SAVEPOINT or ROLLBACK TO SAVEPOINT executed
         end_action.state!(:succeed) if end_action
 
         continuation
+      else
+        state!(:failed)
+        raise 'Savepoint can only be used inside transaction'
       end
     end
 

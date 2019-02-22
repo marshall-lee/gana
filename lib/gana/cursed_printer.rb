@@ -98,7 +98,7 @@ module Gana
           end
         when LogPrint
           clr(WHITE, bold: true ) { pr PRINT_MARK }
-          pr_worker_mark(entry.worker) if entry.worker
+          pr_worker_mark(entry.worker)
           clr(WHITE) { pr " #{entry.msg}"; br }
         end
       end
@@ -129,6 +129,7 @@ module Gana
     end
 
     def pr_worker_mark(worker)
+      return unless worker
       clr(MAGENTA) { pr " (T#{worker.index + 1})" }
     end
 
