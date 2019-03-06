@@ -8,7 +8,7 @@ module Gana
     end
 
     def log_connection_yield(sql, conn, args=nil, &block)
-      if (worker = Thread.current[:gana_worker])
+      if (worker = Gana::Worker.current)
         statement = Statement.new(sql, worker)
         timer = Sequel.start_timer
         worker.runner.log << statement

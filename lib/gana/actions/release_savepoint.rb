@@ -1,5 +1,5 @@
 module Gana::Actions
-  class RollbackTransaction < Base
+  class ReleaseSavepoint < Base
     include Gana::EventedState
 
     def initialize(db, continuation)
@@ -10,11 +10,10 @@ module Gana::Actions
 
     def run
       if @db.in_transaction?
-        @db.rollback_on_exit
-        throw :end_transaction, [self, @continuation]
+        throw :destroy_savepoint, [self, @continuation]
       else
         state!(:failed)
-        raise "Cannot rollback_transaction because it's not started"
+        raise "Cannot release_savepoint because it's not started"
       end
     end
 

@@ -1,5 +1,6 @@
 module Gana
   require 'sequel'
+  require 'fiber'
   require 'gana/version'
   require 'gana/runner'
   require 'gana/execution_context'
