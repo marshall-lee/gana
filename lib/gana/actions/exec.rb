@@ -37,6 +37,14 @@ module Gana::Actions
       @state == :waiting
     end
 
+    def paused?
+      @state == :paused
+    end
+
+    def sql?
+      @state == :sql
+    end
+
     def failed?
       @state == :failed
     end

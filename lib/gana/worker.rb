@@ -22,16 +22,14 @@ module Gana
     end
 
     def sync(&block)
-      exec(&block).tap do |action|
+      run_action(Actions::Exec.new(&block)) do |action|
         action.wait_until(&:completed?)
+        join if action.failed?
       end
     end
 
     def exec(&block)
-      run_action(Actions::Exec.new(&block)) do |action|
-        action.wait_while(LAME_TIMEOUT, &:waiting?)
-        @thread.join if action.failed?
-      end
+      run_action(Actions::Exec.new(&block))
     end
 
     def begin_transaction(isolation: nil)
@@ -47,7 +45,7 @@ module Gana
       else
         run_action(action) do
           action.wait_until(&:completed?)
-          @thread.join if action.failed?
+          join if action.failed?
         end
       end
     end
@@ -62,7 +60,7 @@ module Gana
       else
         run_action(action) do
           action.wait_until(&:completed?)
-          @thread.join if action.failed?
+          join if action.failed?
         end
       end
     end
@@ -77,7 +75,7 @@ module Gana
       else
         run_action(action) do
           action.wait_until(&:completed?)
-          @thread.join if action.failed?
+          join if action.failed?
         end
       end
     end
@@ -95,7 +93,7 @@ module Gana
       else
         run_action(action) do
           action.wait_until(&:completed?)
-          @thread.join if action.failed?
+          join if action.failed?
         end
       end
     end
@@ -127,7 +125,6 @@ module Gana
     def run_action(action)
       @queue << action
       yield action if block_given?
-      action
     rescue ClosedQueueError
       # It's useless to pre-check _@queue.closed?_ before _@queue <<_ because of
       # possible race condition.

@@ -22,12 +22,12 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "sequel", "~> 5.16"
 
-  spec.add_development_dependency "bundler", "~> 1.16"
-  spec.add_development_dependency "rake", "~> 10.0"
-  spec.add_development_dependency "rspec", "~> 3.8.0"
-  spec.add_development_dependency "pg", "~> 1.1"
-  spec.add_development_dependency "pry", "~> 0.3"
-  spec.add_development_dependency "pry-byebug", "~> 3.6"
-  spec.add_development_dependency "pry-doc", "~> 1.0"
-  spec.add_development_dependency "curses", "~> 1.2"
+  spec.add_development_dependency "bundler", "~> 2.2"
+  spec.add_development_dependency "rake", "~> 13.0"
+  spec.add_development_dependency "rspec", "~> 3.10.0"
+  spec.add_development_dependency "pg", "~> 1.2"
+  spec.add_development_dependency "pry", "~> 0.13"
+  spec.add_development_dependency "pry-byebug", "~> 3.9"
+  spec.add_development_dependency "pry-doc", "~> 1.2"
+  spec.add_development_dependency "curses", "~> 1.4"
 end

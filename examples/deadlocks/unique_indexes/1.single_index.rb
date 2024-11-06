@@ -4,7 +4,7 @@
 # More info: https://rcoh.svbtle.com/postgres-unique-constraints-can-cause-deadlock
 
 gana do |tx1, tx2|
-  table = new_table :lol do
+  table = new_table do
     primary_key :id
     column :key, :text, unique: true
   end

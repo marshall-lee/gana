@@ -1,5 +1,5 @@
 gana do |t1, t2|
-  table = new_table :lol do
+  table = new_table do
     primary_key :id
   end
 

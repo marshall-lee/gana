@@ -26,39 +26,40 @@ module Gana
     end
 
     def new_table(name = :table, &block)
-      name = "#{name}_#{SecureRandom.hex(3)}".to_sym
+      name = "#{name}_#{Process.pid}_#{SecureRandom.hex(3)}".to_sym
       db.create_table(name, &block)
+      db.primary_key(name) # Prevent primary key fetching in workers.
       @runner.tmp_tables << name
       db[name]
     end
 
     def begin_transaction(*args)
-      if Gana::Worker.current
-        Gana::Worker.current.begin_transaction(*args)
+      if (worker = Gana::Worker.current)
+        worker.begin_transaction(*args)
       else
         raise 'Cannot begin_transaction outside of worker thread'
       end
     end
 
     def commit_transaction(*args)
-      if Gana::Worker.current
-        Gana::Worker.current.commit_transaction(*args)
+      if (worker = Gana::Worker.current)
+        worker.commit_transaction(*args)
       else
         raise 'Cannot commit_transaction outside of worker thread'
       end
     end
 
     def rollback_transaction(*args)
-      if Gana::Worker.current
-        Gana::Worker.current.rollback_transaction(*args)
+      if (worker = Gana::Worker.current)
+        worker.rollback_transaction(*args)
       else
         raise 'Cannot rollback_transaction outside of worker thread'
       end
     end
 
     def savepoint(*args)
-      if Gana::Worker.current
-        Gana::Worker.current.savepoint(*args)
+      if (worker = Gana::Worker.current)
+        worker.savepoint(*args)
       else
         raise 'Cannot set savepoint outside of worker thread'
       end

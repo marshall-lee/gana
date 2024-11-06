@@ -1,7 +1,7 @@
 # Or even multiple tables
 
 gana do |t1, t2|
-  lol = new_table :lol do
+  lol = new_table do
     primary_key :id
     column :key1, :text, unique: true
   end
