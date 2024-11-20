@@ -8,11 +8,13 @@ module Gana
     end
 
     def log_connection_yield(sql, conn, args=nil, &block)
-      if (worker = Thread.current[:gana_worker])
+      if (worker = Gana::Worker.current)
         statement = Statement.new(sql, worker)
         timer = Sequel.start_timer
         worker.runner.log << statement
       end
+      exec_action = Gana::Worker.current_exec
+      exec_action.state!(:sql) if exec_action
       super.tap { statement.status = :succeed if statement }
     rescue => e
       statement.status = :failed if statement
@@ -21,6 +23,7 @@ module Gana
       if statement && !e
         statement.duration = Sequel.elapsed_seconds_since(timer)
       end
+      exec_action.state!(:running) if exec_action
     end
 
     Sequel::Database.register_extension :gana, self

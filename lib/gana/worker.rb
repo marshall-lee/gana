@@ -1,6 +1,18 @@
 module Gana
   class Worker
-    LAME_TIMEOUT = 0.05
+    LAME_TIMEOUT = 0.005
+
+    class << self
+      # Thread-local current worker
+      def current
+        Thread.current.thread_variable_get(:gana_current_worker)
+      end
+
+      # Fiber-local current exec action
+      def current_exec
+        Thread.current[:gana_current_exec]
+      end
+    end
 
     def initialize(runner, index)
       @runner = runner
@@ -10,33 +22,92 @@ module Gana
     end
 
     def sync(&block)
-      exec(&block).tap do |action|
+      run_action(Actions::Exec.new(&block)) do |action|
         action.wait_until(&:completed?)
+        join if action.failed?
       end
     end
 
     def exec(&block)
-      Actions::Exec.new(&block).tap do |action|
-        @queue << action
-        action.wait_while(LAME_TIMEOUT, &:waiting?)
+      run_action(Actions::Exec.new(&block))
+    end
+
+    def begin_transaction(isolation: nil)
+      exec_action = Gana::Worker.current_exec
+
+      action = Actions::BeginTransaction.new(db, isolation: isolation) do
+        handle_action(exec_action)
+        run_loop
+      end
+
+      if exec_action
+        Fiber.yield action
+      else
+        run_action(action) do
+          action.wait_until(&:completed?)
+          join if action.failed?
+        end
       end
     end
 
-    def begin_transaction(**options)
-      @queue << Actions::BeginTransaction.new(**options)
-    end
-
     def commit_transaction
-      @queue << Actions::CommitTransaction.new
+      exec_action = Gana::Worker.current_exec
+
+      action = Actions::CommitTransaction.new(db, exec_action)
+
+      if exec_action
+        Fiber.yield action
+      else
+        run_action(action) do
+          action.wait_until(&:completed?)
+          join if action.failed?
+        end
+      end
     end
 
     def rollback_transaction
-      @queue << Actions::RollbackTransaction.new
+      exec_action = Gana::Worker.current_exec
+
+      action = Actions::RollbackTransaction.new(db, exec_action)
+
+      if exec_action
+        Fiber.yield action
+      else
+        run_action(action) do
+          action.wait_until(&:completed?)
+          join if action.failed?
+        end
+      end
+    end
+
+    def savepoint
+      exec_action = Gana::Worker.current_exec
+
+      action = Actions::Savepoint.new(db) do
+        handle_action(exec_action)
+        run_loop
+      end
+
+      if exec_action
+        Fiber.yield action
+      else
+        run_action(action) do
+          action.wait_until(&:completed?)
+          join if action.failed?
+        end
+      end
+    end
+
+    def join
+      @thread.join
     end
 
     def terminate
       @queue.close
-      @thread.join
+    end
+
+    def terminated?
+      @queue.closed?
     end
 
     def alive?
@@ -51,37 +122,41 @@ module Gana
       @runner.db
     end
 
+    def run_action(action)
+      @queue << action
+      yield action if block_given?
+    rescue ClosedQueueError
+      # It's useless to pre-check _@queue.closed?_ before _@queue <<_ because of
+      # possible race condition.
+    ensure
+      # If one of the workers terminated, execution of the main block
+      # should not go further.
+      throw :terminate if terminated?
+    end
+
     def run
       db.synchronize do
-        Thread.current[:gana_worker] = self
+        Thread.current.thread_variable_set(:gana_current_worker, self)
         begin
           run_loop
         rescue => e
           @runner.log << LogError.new(self, e)
+          runner.terminate_all
         end
       end
     end
 
     def run_loop
-      until @queue.closed? && @queue.empty?
+      until terminated? && @queue.empty?
         action = @queue.pop
-        case action
-        when Actions::Exec
-          action.run
-          raise action.result if action.state == :failed
-        when Actions::BeginTransaction
-          db.transaction(action.options) { run_loop }
-        when Actions::RollbackTransaction
-          raise Sequel::Rollback
-        when Actions::CommitTransaction
-          if db.in_transaction?
-            break
-          else
-            raise "Cannot commit_transaction because it's not started"
-          end
-        when nil
-          @terminated = true
-        end
+        handle_action(action)
+      end
+    end
+
+    def handle_action(action)
+      while action
+        result = action.run
+        action = result.is_a?(Gana::Actions::Base) && result
       end
     end
   end

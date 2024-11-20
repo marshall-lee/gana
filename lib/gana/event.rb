@@ -1,6 +1,6 @@
 module Gana
   module EventedState
-    def initialize(*)
+    def initialize
       @evs_mutex = Mutex.new
       @evs_cond = ConditionVariable.new
       super
@@ -9,20 +9,37 @@ module Gana
     def state!(value)
       @evs_mutex.synchronize do
         @state = value
-        @evs_cond.signal
+        @evs_cond.broadcast
       end
     end
 
     def wait_until(timeout = nil)
       @evs_mutex.synchronize do
-        @evs_cond.wait(@evs_mutex, timeout) until yield self
+        unless timeout
+          loop do
+            return true if yield self
+
+            @evs_cond.wait(@evs_mutex)
+          end
+        else
+          was = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          loop do
+            return true if yield self
+
+            @evs_cond.wait(@evs_mutex, timeout)
+            now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            duration = now - was
+            return false if duration >= timeout
+
+            timeout -= duration
+            was = now
+          end
+        end
       end
     end
 
     def wait_while(timeout = nil)
-      @evs_mutex.synchronize do
-        @evs_cond.wait(@evs_mutex, timeout) while yield self
-      end
+      wait_until(timeout) { |obj| !yield obj }
     end
 
     attr_reader :state
